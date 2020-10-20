@@ -2,8 +2,10 @@ package tfe
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
 	"testing"
+	"time"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -14,6 +16,7 @@ import (
 func TestAccTFETeamMembers_basic(t *testing.T) {
 	users := []*tfe.User{}
 	TFE_USER1_HASH := hashSchemaString(TFE_USER1)
+	rInt := rand.New(rand.NewSource(time.Now().UnixNano())).Int()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -26,7 +29,7 @@ func TestAccTFETeamMembers_basic(t *testing.T) {
 		CheckDestroy: testAccCheckTFETeamMembersDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTFETeamMembers_basic,
+				Config: getTestAccTFETeamMembersBasic(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckTFETeamMembersExists(
 						"tfe_team_members.foobar", &users),
@@ -47,6 +50,7 @@ func TestAccTFETeamMembers_update(t *testing.T) {
 	users := []*tfe.User{}
 	TFE_USER1_HASH := hashSchemaString(TFE_USER1)
 	TFE_USER2_HASH := hashSchemaString(TFE_USER2)
+	rInt := rand.New(rand.NewSource(time.Now().UnixNano())).Int()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -62,7 +66,7 @@ func TestAccTFETeamMembers_update(t *testing.T) {
 		CheckDestroy: testAccCheckTFETeamMembersDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTFETeamMembers_basic,
+				Config: getTestAccTFETeamMembersBasic(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckTFETeamMembersExists(
 						"tfe_team_members.foobar", &users),
@@ -77,7 +81,7 @@ func TestAccTFETeamMembers_update(t *testing.T) {
 			},
 
 			{
-				Config: testAccTFETeamMembers_update,
+				Config: getTestAccTFETeamMembersUpdate(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckTFETeamMembersExists(
 						"tfe_team_members.foobar", &users),
@@ -95,6 +99,8 @@ func TestAccTFETeamMembers_update(t *testing.T) {
 }
 
 func TestAccTFETeamMembers_import(t *testing.T) {
+	rInt := rand.New(rand.NewSource(time.Now().UnixNano())).Int()
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -106,7 +112,7 @@ func TestAccTFETeamMembers_import(t *testing.T) {
 		CheckDestroy: testAccCheckTFETeamMembersDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTFETeamMembers_basic,
+				Config: getTestAccTFETeamMembersBasic(rInt),
 			},
 
 			{
@@ -198,9 +204,10 @@ func testAccCheckTFETeamMembersDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccTFETeamMembers_basic = fmt.Sprintf(`
+func getTestAccTFETeamMembersBasic(rInt int) string {
+	return fmt.Sprintf(`
 resource "tfe_organization" "foobar" {
-  name  = "tst-terraform"
+  name  = "tst-terraform-%d"
   email = "admin@company.com"
 }
 
@@ -212,11 +219,13 @@ resource "tfe_team" "foobar" {
 resource "tfe_team_members" "foobar" {
   team_id   = "${tfe_team.foobar.id}"
   usernames = ["%s"]
-}`, TFE_USER1)
+}`, rInt, TFE_USER1)
+}
 
-var testAccTFETeamMembers_update = fmt.Sprintf(`
+func getTestAccTFETeamMembersUpdate(rInt int) string {
+	return fmt.Sprintf(`
 resource "tfe_organization" "foobar" {
-  name  = "tst-terraform"
+  name  = "tst-terraform-%d"
   email = "admin@company.com"
 }
 
@@ -228,4 +237,5 @@ resource "tfe_team" "foobar" {
 resource "tfe_team_members" "foobar" {
   team_id   = "${tfe_team.foobar.id}"
   usernames = ["%s", "%s"]
-}`, TFE_USER1, TFE_USER2)
+}`, rInt, TFE_USER1, TFE_USER2)
+}
